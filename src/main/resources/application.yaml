@@ -1,0 +1,19 @@
+spring:
+  application:
+    name: perimeter
+  datasource:
+    # 기본은 메모리 H2(PostgreSQL 호환 모드). 운영은 DATABASE_URL 등으로 PostgreSQL을 넣는다
+    url: ${DATABASE_URL:jdbc:h2:mem:perimeter;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH}
+    username: ${DATABASE_USERNAME:sa}
+    password: ${DATABASE_PASSWORD:}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+
+perimeter:
+  scan:
+    # 같은 도메인을 다시 점검하려면 기다려야 하는 시간
+    cooldown: 10m
+    http-timeout: 5s
+    user-agent: "PerimeterScanner/0.1 (+https://github.com/codes-gy/perimeter)"
