@@ -1,4 +1,4 @@
-# Perimeter 기획서
+# 문단속(Mundansok) 기획서
 
 > 회사 도메인을 넣으면, 공격자가 밖에서 먼저 보게 될 약점을 찾아 쉬운 말로 알려 주는 외부 노출 점검 서비스
 
@@ -38,7 +38,7 @@
 ## 5. 사용 흐름
 
 ```
-도메인 등록 → TXT 레코드 안내(_perimeter-verify.<도메인> = perimeter-verify=<토큰>)
+도메인 등록 → TXT 레코드 안내(_mundansok-verify.<도메인> = mundansok-verify=<토큰>)
 → 소유 인증 → 점검 요청(비동기) → 결과: 점수 · 위험도별 항목 · 고치는 방법
 ```
 

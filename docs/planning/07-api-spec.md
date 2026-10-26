@@ -9,7 +9,7 @@
 // 201 Created
 {
   "id": 1, "name": "shop.example.com", "verified": false, "verifiedAt": null,
-  "verification": { "type": "TXT", "name": "_perimeter-verify.shop.example.com", "value": "perimeter-verify=3f9c…" }
+  "verification": { "type": "TXT", "name": "_mundansok-verify.shop.example.com", "value": "mundansok-verify=3f9c…" }
 }
 ```
 

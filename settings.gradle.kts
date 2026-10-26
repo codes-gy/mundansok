@@ -1,1 +1,1 @@
-rootProject.name = "perimeter"
+rootProject.name = "mundansok"

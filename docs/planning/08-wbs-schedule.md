@@ -5,7 +5,7 @@
 ```mermaid
 gantt
     dateFormat YYYY-MM-DD
-    title Perimeter 8주 일정 (계획)
+    title 문단속 8주 일정 (계획)
     section 스프린트 1 — 기반
     요구사항 · 아키텍처 · ERD 확정        :s1a, 2026-11-02, 3d
     도메인 등록 · 소유 인증 API           :s1b, after s1a, 5d
