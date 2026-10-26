@@ -66,7 +66,7 @@
 | POST | `/api/domains/{id}/scans` | 점검 요청(인증된 도메인만, 10분에 한 번) — 202 |
 | GET | `/api/scans/{id}` | 점검 상태 · 점수 · 결과 |
 
-## 8. 일정 (5인 팀 기준 상세는 planning/08-wbs-schedule.md)
+## 8. 일정 (역할별 상세는 planning/08-wbs-schedule.md)
 
 | 단계 | 내용 |
 |---|---|
