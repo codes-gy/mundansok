@@ -1,6 +1,8 @@
 # 문단속 (Mundansok)
 
 > 회사 도메인을 넣으면, 공격자가 밖에서 먼저 보게 될 약점을 찾아 쉬운 말로 알려 주는 **외부 노출 점검 서비스**
+>
+> 개인 프로젝트 · 진행 중
 
 AI 도구로 공격 정찰이 자동화되면서, 노출된 설정 파일 · 만료된 인증서 · 빠진 보안 헤더 · 위조 가능한 메일 도메인이 빠르게 찾아집니다.
 문단속은 같은 시선으로, **공격 없이** 내 도메인을 점검하고 무엇부터 고칠지 알려 줍니다.
@@ -38,7 +40,7 @@ PostgreSQL: `DATABASE_URL=jdbc:postgresql://... DATABASE_USERNAME=... DATABASE_P
 자세한 명세: [docs/planning/07-api-spec.md](docs/planning/07-api-spec.md)
 
 ## 기획 산출물
-팀 프로젝트 방식(이슈 · PR · 리뷰)으로 진행하기 위해 5인 팀 기준으로 작성했습니다 → [docs/planning](docs/planning/README.md)
+역할 분담 · 일정 · 협업 규칙까지 담은 기획 산출물 → [docs/planning](docs/planning/README.md)
 
 ## 기술
 Java 21 · Spring Boot 4.1 · Spring Data JPA · Flyway · PostgreSQL / Next.js (2단계)
