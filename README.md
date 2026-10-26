@@ -40,7 +40,7 @@ PostgreSQL: `DATABASE_URL=jdbc:postgresql://... DATABASE_USERNAME=... DATABASE_P
 자세한 명세: [docs/planning/07-api-spec.md](docs/planning/07-api-spec.md)
 
 ## 기획 산출물
-개인 프로젝트지만 이슈 · 마일스톤 · PR · 리뷰로 팀 프로젝트처럼 운영합니다. 역할 분담 · 일정 · 협업 규칙까지 담은 기획 산출물 → [docs/planning](docs/planning/README.md)
+역할 분담 · 일정 · 협업 규칙까지 담은 기획 산출물 → [docs/planning](docs/planning/README.md)
 
 ## 기술
 Java 21 · Spring Boot 4.1 · Spring Data JPA · Flyway · PostgreSQL / Next.js (2단계)
