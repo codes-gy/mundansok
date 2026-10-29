@@ -96,7 +96,7 @@ class ScanFlowTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.verified").value(true));
 
-        // 점검 대상: HTTPS 전환 O, 보안 헤더 일부 없음, .env 노출, SPF만 있고 DMARC 없음
+        // 점검 대상: HTTPS 전환 O, 보안 헤더 일부 없음, .env 노출, SPF만 있고 DMARC 없음, CAA는 상위 도메인에 있음
         probe.respond("http://shop.example.com/", 301, Map.of("Location", "https://shop.example.com/"), "");
         probe.respond("https://shop.example.com/", 200, Map.of(
                 "Strict-Transport-Security", "max-age=31536000",
@@ -104,6 +104,7 @@ class ScanFlowTest {
                 "Referrer-Policy", "no-referrer"), "<html>");
         probe.respond("https://shop.example.com/.env", 200, Map.of(), "SECRET_KEY=abc\n");
         dns.txt("shop.example.com", "v=spf1 -all");
+        dns.caa("example.com", "0 issue \"letsencrypt.org\"");
 
         String requested = mvc.perform(post("/api/domains/{id}/scans", id))
                 .andExpect(status().isAccepted())

@@ -1,5 +1,6 @@
 package dev.codesgy.mundansok.check;
 
+import dev.codesgy.mundansok.net.DnsResolver;
 import dev.codesgy.mundansok.net.TlsInfo;
 import dev.codesgy.mundansok.net.TlsInspector;
 import java.io.UncheckedIOException;
@@ -10,17 +11,19 @@ import java.util.List;
 import java.util.Set;
 import org.springframework.stereotype.Component;
 
-/** 인증서 만료 · 호스트 이름 일치 · 협상된 TLS 버전 */
+/** 인증서 만료 · 호스트 이름 일치 · 협상된 TLS 버전 · 인증서 발급 기관 제한(CAA) */
 @Component
 public class TlsCheck implements Check {
 
     private static final Set<String> MODERN = Set.of("TLSv1.2", "TLSv1.3");
 
     private final TlsInspector inspector;
+    private final DnsResolver dns;
     private final Clock clock;
 
-    public TlsCheck(TlsInspector inspector, Clock clock) {
+    public TlsCheck(TlsInspector inspector, DnsResolver dns, Clock clock) {
         this.inspector = inspector;
+        this.dns = dns;
         this.clock = clock;
     }
 
@@ -62,6 +65,24 @@ public class TlsCheck implements Check {
             findings.add(new CheckFinding(id(), Severity.HIGH, "오래된 TLS 버전",
                     "협상된 버전: " + tls.protocol(), "TLS 1.2 이상만 허용하도록 웹 서버 설정을 바꿔 주세요"));
         }
+        if (lacksCaa(host)) {
+            findings.add(new CheckFinding(id(), Severity.LOW, "CAA 레코드 없음",
+                    host + "와 상위 도메인에 CAA 레코드가 없어 어느 인증 기관이든 이 도메인의 인증서를 발급할 수 있어요",
+                    "쓰는 인증 기관만 허용하는 CAA 레코드를 추가해 주세요 (예: example.com. CAA 0 issue \"letsencrypt.org\")"));
+        }
         return findings;
+    }
+
+    // CAA 는 가장 가까운 상위 도메인의 레코드가 적용된다 (RFC 8659). 최상위 도메인(kr, com)은 묻지 않는다.
+    // DNS 조회가 실패하면 판단할 수 없으므로 알리지 않는다
+    private boolean lacksCaa(String host) {
+        try {
+            for (String name = host; name.indexOf('.') > 0; name = name.substring(name.indexOf('.') + 1)) {
+                if (!dns.caa(name).isEmpty()) return false;
+            }
+            return true;
+        } catch (IllegalStateException e) {
+            return false;
+        }
     }
 }

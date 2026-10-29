@@ -15,4 +15,9 @@ public record HttpResult(int status, Map<String, List<String>> headers, String b
         List<String> values = headers.get(name.toLowerCase());
         return values == null || values.isEmpty() ? Optional.empty() : Optional.of(values.getFirst());
     }
+
+    /** 같은 이름으로 여러 번 온 헤더(Set-Cookie 등)의 값 전부 */
+    public List<String> values(String name) {
+        return headers.getOrDefault(name.toLowerCase(), List.of());
+    }
 }

@@ -34,14 +34,15 @@ public class JdkHttpProbe implements HttpProbe {
     }
 
     @Override
-    public HttpResult get(String url) {
+    public HttpResult get(String url, Map<String, String> headers) {
         URI uri = URI.create(url);
         guard.requirePublic(uri.getHost());
-        HttpRequest request = HttpRequest.newBuilder(uri)
+        HttpRequest.Builder builder = HttpRequest.newBuilder(uri)
                 .timeout(properties.httpTimeout())
                 .header("User-Agent", properties.userAgent())
-                .GET()
-                .build();
+                .GET();
+        headers.forEach(builder::header);
+        HttpRequest request = builder.build();
         try {
             HttpResponse<InputStream> response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
             String body;

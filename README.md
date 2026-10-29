@@ -14,10 +14,11 @@ AI 도구로 공격 정찰이 자동화되면서, 노출된 설정 파일 · 만
 ## 점검 항목
 | 점검 | 내용 |
 |---|---|
-| TLS | 인증서 만료 · 호스트 이름 · TLS 버전 |
+| TLS | 인증서 만료 · 호스트 이름 · TLS 버전 · CAA 레코드 |
 | HTTPS 전환 | `http://` 접속이 `https://`로 넘어가는지 |
-| 보안 헤더 | HSTS · CSP · nosniff · 클릭재킹 방지 · Referrer-Policy · 서버 버전 노출 |
-| 민감 파일 | `.git` · `.env` · Actuator env · server-status · phpinfo (본문 서명으로 판정) |
+| 보안 헤더 | HSTS(유지 기간 포함) · CSP(인라인 스크립트 허용 포함) · nosniff · 클릭재킹 방지 · Referrer-Policy · 쿠키 Secure · HttpOnly · SameSite · 서버 버전 · X-Powered-By 노출 |
+| 민감 파일 | `.git` · `.svn` · `.DS_Store` · `.env` · Actuator env · heapdump(목록만 확인) · server-status · phpinfo · OpenAPI 문서 (본문 서명으로 판정) |
+| CORS | 아무 출처나 그대로 허용하는지, 로그인 정보(쿠키)까지 허용하는지 |
 | 메일 위조 방지 | SPF · DMARC |
 
 ## 실행
