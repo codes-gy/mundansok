@@ -1,9 +1,9 @@
-# Perimeter
+# 문단속 (Mundansok)
 
 > 회사 도메인을 넣으면, 공격자가 밖에서 먼저 보게 될 약점을 찾아 쉬운 말로 알려 주는 **외부 노출 점검 서비스**
 
 AI 도구로 공격 정찰이 자동화되면서, 노출된 설정 파일 · 만료된 인증서 · 빠진 보안 헤더 · 위조 가능한 메일 도메인이 빠르게 찾아집니다.
-Perimeter는 같은 시선으로, **공격 없이** 내 도메인을 점검하고 무엇부터 고칠지 알려 줍니다.
+문단속은 같은 시선으로, **공격 없이** 내 도메인을 점검하고 무엇부터 고칠지 알려 줍니다.
 
 ## 원칙
 - **내 도메인만** — DNS TXT 레코드로 소유를 인증한 도메인만 점검합니다
@@ -14,10 +14,11 @@ Perimeter는 같은 시선으로, **공격 없이** 내 도메인을 점검하�
 ## 점검 항목
 | 점검 | 내용 |
 |---|---|
-| TLS | 인증서 만료 · 호스트 이름 · TLS 버전 |
+| TLS | 인증서 만료 · 호스트 이름 · TLS 버전 · CAA 레코드 |
 | HTTPS 전환 | `http://` 접속이 `https://`로 넘어가는지 |
-| 보안 헤더 | HSTS · CSP · nosniff · 클릭재킹 방지 · Referrer-Policy · 서버 버전 노출 |
-| 민감 파일 | `.git` · `.env` · Actuator env · server-status · phpinfo (본문 서명으로 판정) |
+| 보안 헤더 | HSTS(유지 기간 포함) · CSP(인라인 스크립트 허용 포함) · nosniff · 클릭재킹 방지 · Referrer-Policy · 쿠키 Secure · HttpOnly · SameSite · 서버 버전 · X-Powered-By 노출 |
+| 민감 파일 | `.git` · `.svn` · `.DS_Store` · `.env` · Actuator env · heapdump(목록만 확인) · server-status · phpinfo · OpenAPI 문서 (본문 서명으로 판정) |
+| CORS | 아무 출처나 그대로 허용하는지, 로그인 정보(쿠키)까지 허용하는지 |
 | 메일 위조 방지 | SPF · DMARC |
 
 ## 실행

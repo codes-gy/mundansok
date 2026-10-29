@@ -10,11 +10,12 @@
 | FR-03 | 사용자가 인증을 요청하면 TXT 레코드를 조회해 소유를 인증한다 | M | PM/BE-L | 1 |
 | FR-04 | 인증된 도메인만 점검을 요청할 수 있다. 같은 도메인은 10분에 한 번 | M | PM/BE-L | 1 |
 | FR-05 | 점검은 비동기로 실행되고, 사용자는 상태(대기 · 진행 · 완료 · 실패)를 조회한다 | M | BE-2 | 1 |
-| FR-06 | TLS 인증서 만료 · 호스트 이름 · TLS 버전을 점검한다 | M | BE-1 | 1 |
+| FR-06 | TLS 인증서 만료 · 호스트 이름 · TLS 버전과 인증 기관 제한(CAA) 레코드를 점검한다 | M | BE-1 | 1 |
 | FR-07 | HTTP 접속이 HTTPS로 전환되는지 점검한다 | M | BE-1 | 1 |
-| FR-08 | 보안 헤더(HSTS · CSP · nosniff · 클릭재킹 방지 · Referrer-Policy)와 서버 버전 노출을 점검한다 | M | BE-1 | 1 |
-| FR-09 | 민감 파일(.git · .env · actuator · server-status · phpinfo) 노출을 본문 서명으로 점검한다 | M | BE-1 | 2 |
+| FR-08 | 보안 헤더(HSTS와 그 유지 기간 · CSP와 인라인 스크립트 허용 · nosniff · 클릭재킹 방지 · Referrer-Policy), 쿠키 보안 속성(Secure · HttpOnly · SameSite), 서버 버전 · X-Powered-By 노출을 점검한다 | M | BE-1 | 1 |
+| FR-09 | 민감 파일(.git · .svn · .DS_Store · .env · actuator env · heapdump 링크 · server-status · phpinfo · OpenAPI 문서) 노출을 본문 서명으로 점검한다. 같은 원인은 한 번만 알린다 | M | BE-1 | 2 |
 | FR-10 | SPF · DMARC 레코드와 정책을 점검한다 | M | BE-1 | 2 |
+| FR-17 | 아무 출처나 그대로 허용하는 CORS 설정(로그인 정보 허용 여부 포함)을 점검한다 | M | BE-1 | 2 |
 | FR-11 | 결과는 점수(100점 감점제)와 위험도순 항목, 항목별 근거 · 조치 방법을 보여 준다 | M | FE | 2 |
 | FR-12 | 회원가입 · 로그인, 팀(조직) 단위로 도메인을 함께 관리한다 | S | PM/BE-L · FE | 3 |
 | FR-13 | 도메인별 점검 이력과 점수 추이를 본다 | S | FE | 3 |
