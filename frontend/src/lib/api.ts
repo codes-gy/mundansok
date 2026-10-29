@@ -55,12 +55,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   }
   if (!res.ok) {
     const problem = await res.json().catch(() => null);
-    // 백엔드는 운영 시간(평일 11:30~19:00)에만 켜져 있어, 꺼져 있으면 Problem Details 없이 503 이 온다
+    // 백엔드는 운영 시간(평일 11:30~23:00)에만 켜져 있어, 꺼져 있으면 Problem Details 없이 503 이 온다
     if (!problem && (res.status === 502 || res.status === 503)) {
       throw new ApiError(
         res.status,
         "BACKEND_OFF",
-        "지금은 점검 서버가 쉬고 있어요. 평일 11:30~19:00에 다시 시도해 주세요",
+        "지금은 점검 서버가 쉬고 있어요. 평일 11:30~23:00에 다시 시도해 주세요",
       );
     }
     throw new ApiError(
