@@ -2,11 +2,12 @@ import type { Severity } from "./api";
 
 /** 백엔드 Check.id() 와 화면 이름 */
 export const CHECKS = [
-  { id: "tls", label: "TLS 인증서", summary: "만료일, 호스트 이름, 오래된 TLS 버전" },
+  { id: "tls", label: "TLS 인증서", summary: "만료일, 호스트 이름, TLS 버전, CAA 레코드" },
   { id: "https-redirect", label: "HTTPS 전환", summary: "http:// 접속이 https://로 넘어가는지" },
-  { id: "security-headers", label: "보안 헤더", summary: "HSTS, CSP, 클릭재킹 방지, 서버 버전 노출" },
-  { id: "exposed-files", label: "민감 파일", summary: ".git, .env, Actuator env, phpinfo 노출" },
+  { id: "security-headers", label: "보안 헤더 · 쿠키", summary: "HSTS, CSP, 클릭재킹 방지, 쿠키 보안 속성" },
+  { id: "exposed-files", label: "민감 파일", summary: ".git, .env, Actuator, API 문서 노출" },
   { id: "email-auth", label: "메일 위조 방지", summary: "SPF, DMARC 레코드 설정" },
+  { id: "cors", label: "CORS 설정", summary: "아무 사이트나 응답을 읽어 갈 수 있는지" },
 ] as const;
 
 export function checkLabel(id: string) {

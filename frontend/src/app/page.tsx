@@ -78,7 +78,7 @@ export default function Home() {
         <section id="checks" className="band">
           <div className="container section">
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <h2 className="section__title">이렇게 다섯 군데를 확인해요</h2>
+              <h2 className="section__title">이렇게 여섯 군데를 확인해요</h2>
               <p className="muted">공격자가 자동 정찰로 가장 먼저 찾는 곳들이에요.</p>
             </div>
             <ul className="check-grid">

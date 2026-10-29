@@ -116,7 +116,7 @@ function Progress({ queued, domain }: { queued: boolean; domain: string | null }
       <p className="lead">
         {queued
           ? "앞선 점검이 끝나면 바로 시작해요. 창을 닫아도 점검은 계속돼요."
-          : "다섯 가지 항목을 확인하는 중이에요. 창을 닫아도 점검은 계속돼요."}
+          : "여섯 가지 항목을 확인하는 중이에요. 창을 닫아도 점검은 계속돼요."}
       </p>
     </section>
   );
