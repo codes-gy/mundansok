@@ -477,15 +477,15 @@ code,
 }
 
 .section__title {
-  font-size: 30px;
+  font-size: 24px;
   font-weight: 700;
   letter-spacing: -0.01em;
 }
 
 .check-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
   padding: 0;
   list-style: none;
 }
@@ -493,10 +493,17 @@ code,
 .check-card {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 24px;
+  gap: 8px;
+  padding: 16px;
   border: 1px solid var(--line);
   border-radius: 12px;
+}
+
+/* PC에서는 세 항목씩 두 줄로 */
+@media (min-width: 640px) {
+  .check-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 .check-card svg {
@@ -510,6 +517,7 @@ code,
 .check-card p {
   color: var(--muted);
   font-size: 15px;
+  word-break: keep-all;
 }
 
 .principles {

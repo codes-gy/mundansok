@@ -84,7 +84,7 @@ export default function Home() {
             <ul className="check-grid">
               {CHECKS.map((check) => (
                 <li key={check.id} className="check-card">
-                  <CheckTypeIcon check={check.id} size={28} />
+                  <CheckTypeIcon check={check.id} size={24} />
                   <h3>{check.label}</h3>
                   <p>{check.summary}</p>
                 </li>
