@@ -19,7 +19,7 @@
 
 ## POST /api/domains/{id}/scans — 점검 요청
 - 202: `{ "id": 7, "status": "QUEUED", ... }`
-- 403 `DOMAIN_NOT_VERIFIED` · 429 `SCAN_COOLDOWN`
+- 403 `DOMAIN_NOT_VERIFIED` · 429 `SCAN_COOLDOWN` · 503 `SCAN_QUEUE_FULL`
 
 ## GET /api/scans/{id} — 점검 결과
 ```json
@@ -43,4 +43,5 @@
 | DOMAIN_NOT_VERIFIED | 403 | 소유 인증 전 점검 요청 |
 | VERIFICATION_RECORD_NOT_FOUND | 409 | TXT 레코드에 인증 값 없음 |
 | SCAN_COOLDOWN | 429 | 10분 안 재점검 |
+| SCAN_QUEUE_FULL | 503 | 점검 풀이 가득 참 — 기록을 남기지 않으니 잠시 후 바로 다시 요청 가능 |
 | DNS_UNAVAILABLE | 502 | DNS 조회 실패 |

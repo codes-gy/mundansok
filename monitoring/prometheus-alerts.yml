@@ -1,0 +1,72 @@
+# 문단속 운영 알림 규칙 (Prometheus)
+# 지표는 /actuator/prometheus에서 나온다. 점검 풀 지표(executor_*)는 Spring Boot가 name="scanExecutor"로 붙인다.
+# 검증: promtool check rules monitoring/prometheus-alerts.yml
+groups:
+  - name: mundansok
+    rules:
+      # 점검 항목 하나가 30분 동안 절반 넘게 예외로 끝남 (표본 5회 이상일 때만)
+      - alert: MundansokCheckFailureRatioHigh
+        expr: |
+          (
+            sum by (check) (increase(mundansok_check_duration_seconds_count{outcome="failed"}[30m]))
+            /
+            sum by (check) (increase(mundansok_check_duration_seconds_count[30m]))
+          ) > 0.5
+          and
+          sum by (check) (increase(mundansok_check_duration_seconds_count[30m])) >= 5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "점검 {{ $labels.check }} 실패율이 높음 ({{ $value | humanizePercentage }})"
+          description: "최근 30분 동안 {{ $labels.check }} 점검의 절반 넘게 예외로 끝났습니다. 대상 쪽 장애인지, 점검 코드 · 네트워크(DNS 등) 문제인지 로그(점검 ... 실패)를 확인해 주세요."
+
+      # 점검 대기열이 80% 넘게 찼음 (대기열 100 기준 80건)
+      - alert: MundansokScanQueueNearCapacity
+        expr: |
+          executor_queued_tasks{name="scanExecutor"}
+            / (executor_queued_tasks{name="scanExecutor"} + executor_queue_remaining_tasks{name="scanExecutor"})
+          > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "점검 대기열이 거의 가득 참 ({{ $value | humanizePercentage }})"
+          description: "{{ $labels.instance }}의 scanExecutor 대기열이 80%를 넘었습니다. 곧 점검 요청이 503(SCAN_QUEUE_FULL)으로 거절됩니다."
+
+      # 점검 풀이 가득 차 요청을 거절함
+      - alert: MundansokScanRejected
+        expr: increase(mundansok_scan_rejected_total[5m]) > 0
+        labels:
+          severity: warning
+        annotations:
+          summary: "점검 요청이 거절됨 (5분간 {{ $value | humanize }}건)"
+          description: "점검 풀(스레드 + 대기열)이 가득 차 사용자에게 503 SCAN_QUEUE_FULL을 돌려줬습니다. 풀 크기를 늘리거나 느린 점검을 확인해 주세요."
+
+      # 서버 시작 때 재시작으로 멈춘 점검을 FAILED로 정리함 (정보성).
+      # 시작 직후 첫 수집 전에 값이 오르면 increase()로는 못 잡을 수 있어, 시작 후 30분 동안 카운터 값으로 본다
+      - alert: MundansokRestartCleanup
+        expr: |
+          mundansok_scan_restart_cleaned_total > 0
+          and on (instance, job)
+          process_uptime_seconds < 1800
+        labels:
+          severity: info
+        annotations:
+          summary: "재시작으로 중단된 점검 {{ $value | humanize }}건을 FAILED로 정리함"
+          description: "{{ $labels.instance }}가 시작하면서 오래된 QUEUED · RUNNING 점검을 '서버 재시작으로 점검이 중단됨'으로 정리했습니다. 배포 중 점검이 끊긴 것이면 정상입니다."
+
+      # 점검이 멈춤: 풀에 일(실행 중 또는 대기)이 있는데 15분 동안 끝난 점검 항목이 하나도 없음
+      - alert: MundansokScansStuck
+        expr: |
+          sum by (instance) (
+            executor_active_threads{name="scanExecutor"} + executor_queued_tasks{name="scanExecutor"}
+          ) > 0
+          unless on (instance)
+          sum by (instance) (increase(mundansok_check_duration_seconds_count[15m])) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "점검이 멈춘 것 같음 ({{ $labels.instance }})"
+          description: "scanExecutor에 실행 중이거나 대기 중인 점검이 있는데 20분 가까이 끝난 점검 항목이 없습니다. 스레드 덤프로 어디서 멈췄는지 확인해 주세요."
