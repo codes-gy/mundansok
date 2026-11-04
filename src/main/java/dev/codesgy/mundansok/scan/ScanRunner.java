@@ -5,6 +5,7 @@ import dev.codesgy.mundansok.check.CheckFinding;
 import dev.codesgy.mundansok.check.Severity;
 import dev.codesgy.mundansok.net.AddressGuard.BlockedAddressException;
 import java.time.Clock;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
@@ -23,13 +24,16 @@ public class ScanRunner {
     private final FindingRepository findings;
     private final TransactionTemplate tx;
     private final Clock clock;
+    private final ScanMetrics metrics;
 
-    public ScanRunner(List<Check> checks, ScanRepository scans, FindingRepository findings, TransactionTemplate tx, Clock clock) {
+    public ScanRunner(List<Check> checks, ScanRepository scans, FindingRepository findings, TransactionTemplate tx, Clock clock,
+            ScanMetrics metrics) {
         this.checks = checks;
         this.scans = scans;
         this.findings = findings;
         this.tx = tx;
         this.clock = clock;
+        this.metrics = metrics;
     }
 
     public void run(Long scanId, String host) {
@@ -52,15 +56,22 @@ public class ScanRunner {
         });
     }
 
+    /** 점검 하나를 돌리고 걸린 시간을 결과(ok · failed)별로 남긴다. 내부 주소 차단도 failed로 센다 */
     private List<CheckFinding> runOne(Check check, String host) {
+        long started = System.nanoTime();
+        boolean ok = false;
         try {
-            return check.run(host);
+            List<CheckFinding> result = check.run(host);
+            ok = true;
+            return result;
         } catch (BlockedAddressException e) {
             throw e;
         } catch (RuntimeException e) {
             log.warn("점검 {} 실패: {}", check.id(), host, e);
             return List.of(new CheckFinding(check.id(), Severity.INFO, "점검을 끝내지 못함",
                     e.getClass().getSimpleName() + ": " + e.getMessage(), "잠시 후 다시 점검해 주세요"));
+        } finally {
+            metrics.recordCheck(check.id(), ok, Duration.ofNanos(System.nanoTime() - started));
         }
     }
 }

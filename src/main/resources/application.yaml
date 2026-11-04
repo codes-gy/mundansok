@@ -17,3 +17,13 @@ mundansok:
     cooldown: 10m
     http-timeout: 5s
     user-agent: "MundansokScanner/0.1 (+https://github.com/codes-gy/mundansok)"
+    # 서버 시작 시 이보다 오래된 QUEUED · RUNNING 점검은 재시작으로 중단된 것으로 보고 FAILED로 정리한다.
+    # 정상 점검은 요청마다 5초 제한이라 몇 분 안에 끝난다. 여러 대로 띄울 때 다른 서버가 돌리는 점검을 건드리지 않게 넉넉히 둔다
+    stale-after: 15m
+
+# 운영 지표: health와 prometheus만 연다
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus

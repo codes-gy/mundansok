@@ -38,6 +38,21 @@ PostgreSQL: `DATABASE_URL=jdbc:postgresql://... DATABASE_USERNAME=... DATABASE_P
 
 자세한 명세: [docs/planning/07-api-spec.md](docs/planning/07-api-spec.md)
 
+## 운영 · 관측성
+- **지표**: `GET /actuator/prometheus` (actuator는 `health` · `prometheus`만 연다)
+  | 지표 | 뜻 |
+  |---|---|
+  | `mundansok_check_duration_seconds{check, outcome}` | 점검 항목별 실행 시간. `outcome`은 `ok` · `failed`(예외로 끝남 · 내부 주소 차단) |
+  | `mundansok_scan_rejected_total` | 점검 풀이 가득 차 거절한 점검 요청 수 |
+  | `mundansok_scan_restart_cleaned_total` | 시작 시 재시작 정리로 FAILED 처리한 점검 수 |
+  | `executor_active_threads` · `executor_queued_tasks` · `executor_queue_remaining_tasks` `{name="scanExecutor"}` | 점검 풀(스레드 4 · 대기열 100) 상태. Spring Boot가 자동으로 붙인다 |
+- **재시작 정리**: 점검은 커밋 뒤 메모리 스레드 풀에서 돌기 때문에, 서버가 재시작되면 돌던 점검이 QUEUED · RUNNING으로 남는다.
+  시작할 때(`ApplicationReadyEvent`) `mundansok.scan.stale-after`(기본 15분)보다 오래된 미완료 점검을
+  `FAILED`(error: `서버 재시작으로 점검이 중단됨`)로 한 번에 바꾸고 WARN 로그를 남긴다. 기준보다 최근 것은 다른 서버가 돌리고 있을 수 있어 건드리지 않는다.
+- **풀 포화**: 스레드와 대기열이 모두 차면 점검 요청은 `503 SCAN_QUEUE_FULL`로 거절하고, 방금 만든 QUEUED 기록은 지운다(쿨다운에 걸리지 않고 바로 다시 요청 가능).
+- **알림 규칙**: [monitoring/prometheus-alerts.yml](monitoring/prometheus-alerts.yml) — 점검별 실패율 · 대기열 80% · 거절 발생 · 재시작 정리(정보) · 점검 멈춤.
+  `promtool check rules monitoring/prometheus-alerts.yml`로 검증한다.
+
 ## 기획 산출물
 팀 프로젝트 방식(이슈 · PR · 리뷰)으로 진행하기 위해 5인 팀 기준으로 작성했습니다 → [docs/planning](docs/planning/README.md)
 
