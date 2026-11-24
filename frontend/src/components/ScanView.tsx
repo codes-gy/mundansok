@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ApiError, getScan, type ScanResponse } from "@/lib/api";
+import { ApiError, getScan, type ScanResponse, savedClaim } from "@/lib/api";
 import { CHECKS } from "@/lib/checks";
 import { AlertIcon } from "./Icons";
 import { Report } from "./Report";
@@ -24,8 +24,14 @@ export function ScanView() {
     let timer: ReturnType<typeof setTimeout> | undefined;
 
     async function load() {
+      // 결과는 점검을 요청한 등록의 소유자 토큰으로만 볼 수 있다
+      const claim = domain ? savedClaim(domain) : null;
+      if (!claim) {
+        setError("이 브라우저에서 등록한 도메인의 점검 결과만 볼 수 있어요");
+        return;
+      }
       try {
-        const result = await getScan(id);
+        const result = await getScan(id, claim.token);
         if (cancelled) return;
         setScan(result);
         setError(null);
@@ -47,7 +53,7 @@ export function ScanView() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [id]);
+  }, [id, domain]);
 
   const done = scan?.status === "DONE";
 

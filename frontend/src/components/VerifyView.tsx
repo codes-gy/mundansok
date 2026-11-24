@@ -3,7 +3,18 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ApiError, type DomainResponse, registerDomain, requestScan, scanPath, verifyDomain } from "@/lib/api";
+import {
+  ApiError,
+  type DomainResponse,
+  forgetClaim,
+  getDomain,
+  registerAndSave,
+  requestScan,
+  type SavedClaim,
+  savedClaim,
+  scanPath,
+  verifyDomain,
+} from "@/lib/api";
 import { AlertIcon } from "./Icons";
 import { SiteHeader } from "./SiteHeader";
 import { Stepper } from "./Stepper";
@@ -12,17 +23,34 @@ export function VerifyView() {
   const router = useRouter();
   const name = useSearchParams().get("domain") ?? "";
   const [domain, setDomain] = useState<DomainResponse | null>(null);
+  const [claim, setClaim] = useState<SavedClaim | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [error, setError] = useState<{ title: string; body: string } | null>(null);
   const [pending, setPending] = useState(false);
 
-  // 등록은 같은 도메인이면 기존 인증 값을 돌려주므로, 새로고침해도 같은 레코드가 나온다
+  // 이 브라우저에 보관한 등록이 있으면 그것을 불러온다 (새로고침해도 같은 레코드). 없거나 서버에서 사라졌으면 새로 등록한다
   useEffect(() => {
     if (!name) return;
     let cancelled = false;
-    registerDomain(name)
+
+    async function load(): Promise<DomainResponse> {
+      const saved = savedClaim(name);
+      if (saved) {
+        try {
+          return await getDomain(saved.id, saved.token);
+        } catch (e) {
+          if (!(e instanceof ApiError && (e.status === 401 || e.status === 404))) throw e;
+          forgetClaim(name);
+        }
+      }
+      return registerAndSave(name);
+    }
+
+    load()
       .then((result) => {
-        if (!cancelled) setDomain(result);
+        if (cancelled) return;
+        setDomain(result);
+        setClaim(savedClaim(result.name) ?? savedClaim(name));
       })
       .catch((e) => {
         if (!cancelled) setLoadError(e instanceof ApiError ? e.message : "도메인 정보를 불러오지 못했어요");
@@ -33,19 +61,24 @@ export function VerifyView() {
   }, [name]);
 
   async function onVerify() {
-    if (!domain) return;
+    if (!domain || !claim) return;
     setPending(true);
     setError(null);
     try {
-      const verified = domain.verified ? domain : await verifyDomain(domain.id);
+      const verified = domain.verified ? domain : await verifyDomain(domain.id, claim.token);
       setDomain(verified);
-      const scan = await requestScan(verified.id);
+      const scan = await requestScan(verified.id, claim.token);
       router.push(scanPath(scan.id, verified.name));
     } catch (e) {
       if (e instanceof ApiError && e.code === "VERIFICATION_RECORD_NOT_FOUND") {
         setError({
           title: "아직 레코드를 찾지 못했어요",
           body: "DNS에 반영되기까지 몇 분에서 최대 1시간쯤 걸릴 수 있어요. 이름과 값을 다시 확인하고 잠시 뒤에 눌러 주세요.",
+        });
+      } else if (e instanceof ApiError && e.code === "VERIFICATION_EXPIRED") {
+        setError({
+          title: "인증 레코드가 사라졌어요",
+          body: "점검할 때마다 TXT 레코드로 소유를 다시 확인해요. 아래 레코드를 다시 추가한 뒤 눌러 주세요.",
         });
       } else {
         setError({
@@ -84,7 +117,7 @@ export function VerifyView() {
           <p className="lead">
             {domain?.verified
               ? "바로 점검을 시작할 수 있어요."
-              : "DNS 관리 화면에서 아래 TXT 레코드를 하나 추가해 주세요. 점검이 끝나면 지워도 돼요."}
+              : "DNS 관리 화면에서 아래 TXT 레코드를 하나 추가해 주세요. 점검할 때마다 다시 확인하니 지우지 말고 남겨 두세요."}
           </p>
         </div>
 
@@ -132,7 +165,7 @@ export function VerifyView() {
         )}
 
         <div className="actions">
-          <button type="button" className="button" onClick={onVerify} disabled={!domain || pending}>
+          <button type="button" className="button" onClick={onVerify} disabled={!domain || !claim || pending}>
             {pending ? "확인하는 중…" : domain?.verified ? "점검 시작하기" : "인증 확인"}
           </button>
           <Link href="/" className="link-button">
