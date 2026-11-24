@@ -20,6 +20,26 @@ mundansok:
     # 서버 시작 시 이보다 오래된 QUEUED · RUNNING 점검은 재시작으로 중단된 것으로 보고 FAILED로 정리한다.
     # 정상 점검은 요청마다 5초 제한이라 몇 분 안에 끝난다. 여러 대로 띄울 때 다른 서버가 돌리는 점검을 건드리지 않게 넉넉히 둔다
     stale-after: 15m
+  # IP별 요청 제한 (메모리 토큰 버킷 — 서버 한 대 기준. docs/threat-model.md 참고)
+  # capacity번까지 바로 쓸 수 있고, period 동안 capacity만큼 고르게 다시 찬다
+  rate-limit:
+    enabled: true
+    limits:
+      register:
+        capacity: 20
+        period: 1h
+      verify:
+        capacity: 30
+        period: 1h
+      scan:
+        capacity: 30
+        period: 1h
+
+server:
+  # 프록시(Next.js rewrites 등)가 붙인 X-Forwarded-For를 IP 제한에 반영한다.
+  # native(Tomcat RemoteIpValve)는 사설 · 루프백 대역에서 온 요청의 헤더만 믿으므로, 밖에서 직접 위조한 헤더는 무시된다.
+  # 프록시가 사설망 밖에 있으면 server.tomcat.remoteip.internal-proxies 를 그 주소로 바꾼다
+  forward-headers-strategy: ${FORWARD_HEADERS_STRATEGY:native}
 
 # 운영 지표: health와 prometheus만 연다
 management:

@@ -82,7 +82,7 @@ class ScanMetricsTest {
 
     @Test
     void 점검마다_check와_outcome_태그로_시간을_잰다() {
-        Long domainId = TestRows.verifiedDomain(jdbc, "metrics.example.com");
+        Long domainId = TestRows.verifiedClaim(jdbc, "metrics.example.com").domainId();
         Long scanId = TestRows.scan(jdbc, domainId, "QUEUED", Instant.now());
         double brokenFailed = count("broken", "failed");
         double tlsOk = count("tls", "ok");
@@ -100,7 +100,7 @@ class ScanMetricsTest {
 
     @Test
     void prometheus로_점검_지표와_점검_풀_지표를_내보낸다() throws Exception {
-        Long domainId = TestRows.verifiedDomain(jdbc, "scrape.example.com");
+        Long domainId = TestRows.verifiedClaim(jdbc, "scrape.example.com").domainId();
         runner.run(TestRows.scan(jdbc, domainId, "QUEUED", Instant.now()), "scrape.example.com");
 
         String body = mvc.perform(get("/actuator/prometheus"))

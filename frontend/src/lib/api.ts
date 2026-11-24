@@ -5,12 +5,14 @@ export type ScanStatus = "QUEUED" | "RUNNING" | "DONE" | "FAILED";
 
 export type VerificationRecord = { type: string; name: string; value: string };
 
+/** id 는 등록 한 건의 UUID. ownerToken 은 등록 응답에만 오고, 이후 모든 요청에 Bearer 로 보낸다 */
 export type DomainResponse = {
-  id: number;
+  id: string;
   name: string;
   verified: boolean;
   verifiedAt: string | null;
   verification: VerificationRecord | null;
+  ownerToken: string | null;
 };
 
 export type Finding = {
@@ -22,8 +24,9 @@ export type Finding = {
 };
 
 export type ScanResponse = {
-  id: number;
-  domainId: number;
+  id: string;
+  domainId: string;
+  domain: string;
   status: ScanStatus;
   score: number | null;
   error: string | null;
@@ -43,12 +46,16 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+async function request<T>(path: string, init?: RequestInit, ownerToken?: string): Promise<T> {
   let res: Response;
   try {
     res = await fetch(path, {
       ...init,
-      headers: { "Content-Type": "application/json", ...init?.headers },
+      headers: {
+        "Content-Type": "application/json",
+        ...(ownerToken ? { Authorization: `Bearer ${ownerToken}` } : {}),
+        ...init?.headers,
+      },
     });
   } catch {
     throw new ApiError(0, "NETWORK", "서버에 연결하지 못했어요. 잠시 후 다시 시도해 주세요");
@@ -72,23 +79,86 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-/** 같은 도메인을 다시 등록하면 기존 도메인과 인증 값을 그대로 돌려준다 */
+/** 등록할 때마다 새 등록과 소유자 토큰을 만든다. 토큰은 이 응답에서만 받을 수 있으니 saveClaim 으로 보관한다 */
 export function registerDomain(name: string) {
   return request<DomainResponse>("/api/domains", { method: "POST", body: JSON.stringify({ name }) });
 }
 
-export function verifyDomain(id: number) {
-  return request<DomainResponse>(`/api/domains/${id}/verify`, { method: "POST" });
+export function getDomain(id: string, ownerToken: string) {
+  return request<DomainResponse>(`/api/domains/${encodeURIComponent(id)}`, { cache: "no-store" }, ownerToken);
 }
 
-export function requestScan(domainId: number) {
-  return request<ScanResponse>(`/api/domains/${domainId}/scans`, { method: "POST" });
+export function verifyDomain(id: string, ownerToken: string) {
+  return request<DomainResponse>(`/api/domains/${encodeURIComponent(id)}/verify`, { method: "POST" }, ownerToken);
 }
 
-export function getScan(id: string | number) {
-  return request<ScanResponse>(`/api/scans/${id}`, { cache: "no-store" });
+export function requestScan(domainId: string, ownerToken: string) {
+  return request<ScanResponse>(`/api/domains/${encodeURIComponent(domainId)}/scans`, { method: "POST" }, ownerToken);
 }
 
-export function scanPath(scanId: number, domain: string) {
-  return `/scans/${scanId}?domain=${encodeURIComponent(domain)}`;
+export function getScan(id: string, ownerToken: string) {
+  return request<ScanResponse>(`/api/scans/${encodeURIComponent(id)}`, { cache: "no-store" }, ownerToken);
+}
+
+export function scanPath(scanId: string, domain: string) {
+  return `/scans/${encodeURIComponent(scanId)}?domain=${encodeURIComponent(domain)}`;
+}
+
+// 이 브라우저에서 등록한 도메인의 등록 id 와 소유자 토큰. 토큰이 있어야 인증 · 점검 · 결과 조회를 할 수 있다
+export type SavedClaim = { id: string; token: string };
+
+const CLAIMS_KEY = "mundansok.claims";
+
+function readClaims(): Record<string, SavedClaim> {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(CLAIMS_KEY) ?? "{}");
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeClaims(claims: Record<string, SavedClaim>) {
+  try {
+    window.localStorage.setItem(CLAIMS_KEY, JSON.stringify(claims));
+  } catch {
+    // 저장소를 못 쓰면(사생활 보호 모드 등) 이번 화면에서만 쓴다
+  }
+}
+
+/** 사용자가 넣은 값을 서버와 비슷하게 정리한다 ("https://Shop.Example.com/" → "shop.example.com"). 저장 키로만 쓴다 */
+export function domainKey(input: string) {
+  return input
+    .trim()
+    .toLowerCase()
+    .replace(/^[a-z][a-z0-9+.-]*:\/\//, "")
+    .replace(/[/?#].*$/, "")
+    .replace(/^[^@]*@/, "")
+    .replace(/:\d+$/, "")
+    .replace(/\.$/, "");
+}
+
+export function savedClaim(domain: string): SavedClaim | null {
+  return readClaims()[domainKey(domain)] ?? null;
+}
+
+export function saveClaim(domain: string, claim: SavedClaim) {
+  writeClaims({ ...readClaims(), [domainKey(domain)]: claim });
+}
+
+export function forgetClaim(domain: string) {
+  const claims = readClaims();
+  delete claims[domainKey(domain)];
+  writeClaims(claims);
+}
+
+/** 등록하고 토큰을 보관한다 */
+export async function registerAndSave(name: string) {
+  const domain = await registerDomain(name);
+  if (domain.ownerToken) {
+    const claim = { id: domain.id, token: domain.ownerToken };
+    saveClaim(domain.name, claim);
+    if (domainKey(name) !== domain.name) saveClaim(name, claim);
+  }
+  return domain;
 }

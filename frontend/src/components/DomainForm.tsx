@@ -2,9 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { ApiError, registerDomain, requestScan, scanPath } from "@/lib/api";
+import { ApiError, domainKey, registerAndSave, savedClaim } from "@/lib/api";
 
-/** 도메인을 등록하고, 이미 인증된 도메인이면 바로 점검을 시작한다 */
+/**
+ * 도메인을 등록하고 인증 화면으로 넘긴다.
+ * 이 브라우저에서 이미 등록한 도메인이면 새로 등록하지 않고 보관한 등록을 이어서 쓴다 (인증 화면에서 불러온다)
+ */
 export function DomainForm() {
   const router = useRouter();
   const [name, setName] = useState("");
@@ -20,13 +23,9 @@ export function DomainForm() {
     setPending(true);
     setError(null);
     try {
-      const domain = await registerDomain(name.trim());
-      if (domain.verified) {
-        const scan = await requestScan(domain.id);
-        router.push(scanPath(scan.id, domain.name));
-        return;
-      }
-      router.push(`/verify?domain=${encodeURIComponent(domain.name)}`);
+      const key = domainKey(name);
+      const target = savedClaim(key) ? key : (await registerAndSave(name.trim())).name;
+      router.push(`/verify?domain=${encodeURIComponent(target)}`);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "요청을 처리하지 못했어요");
       setPending(false);

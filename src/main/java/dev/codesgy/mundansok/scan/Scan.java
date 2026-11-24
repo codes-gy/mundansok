@@ -8,6 +8,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import java.time.Instant;
+import java.util.UUID;
 
 @Entity
 public class Scan {
@@ -16,8 +17,16 @@ public class Scan {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    /** API에 내보내는 식별자. 순번 id는 추측할 수 있어 밖으로 내보내지 않는다 (V2 이전 기록은 null — 조회할 수 없음) */
+    @Column(unique = true, updatable = false)
+    private UUID publicId;
+
     @Column(nullable = false)
     private Long domainId;
+
+    /** 점검을 요청한 등록. 결과는 이 등록의 소유자 토큰으로만 볼 수 있다 (V2 이전 기록은 null) */
+    @Column(updatable = false)
+    private Long claimId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -34,8 +43,10 @@ public class Scan {
 
     protected Scan() {}
 
-    public Scan(Long domainId, Instant createdAt) {
+    public Scan(Long domainId, Long claimId, Instant createdAt) {
+        this.publicId = UUID.randomUUID();
         this.domainId = domainId;
+        this.claimId = claimId;
         this.status = ScanStatus.QUEUED;
         this.createdAt = createdAt;
     }
@@ -58,6 +69,14 @@ public class Scan {
 
     public Long getId() {
         return id;
+    }
+
+    public UUID getPublicId() {
+        return publicId;
+    }
+
+    public Long getClaimId() {
+        return claimId;
     }
 
     public Long getDomainId() {

@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { ApiError, requestScan, type ScanResponse, type Severity, scanPath } from "@/lib/api";
+import { ApiError, requestScan, savedClaim, type ScanResponse, type Severity, scanPath } from "@/lib/api";
 import { CHECKS, checkLabel, SCAN_COOLDOWN_MINUTES, SEVERITIES, SEVERITY_INFO } from "@/lib/checks";
 import { CheckIcon } from "./Icons";
 
@@ -34,8 +34,10 @@ export function Report({ scan, domain }: { scan: ScanResponse; domain: string | 
     setPending(true);
     setRescanError(null);
     try {
-      const next = await requestScan(scan.domainId);
-      router.push(scanPath(next.id, domain ?? ""));
+      const claim = savedClaim(scan.domain);
+      if (!claim) throw new ApiError(401, "OWNER_TOKEN_REQUIRED", "이 브라우저에서 등록한 도메인만 다시 점검할 수 있어요");
+      const next = await requestScan(scan.domainId, claim.token);
+      router.push(scanPath(next.id, domain ?? scan.domain));
     } catch (e) {
       setRescanError(e instanceof ApiError ? e.message : "다시 점검하지 못했어요");
       setPending(false);

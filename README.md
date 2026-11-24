@@ -6,9 +6,11 @@ AI 도구로 공격 정찰이 자동화되면서, 노출된 설정 파일 · 만
 문단속은 같은 시선으로, **공격 없이** 내 도메인을 점검하고 무엇부터 고칠지 알려 줍니다.
 
 ## 원칙
-- **내 도메인만** — DNS TXT 레코드로 소유를 인증한 도메인만 점검합니다
+- **내 도메인만** — DNS TXT 레코드로 소유를 인증한 도메인만 점검합니다. 점검할 때마다 레코드를 다시 확인합니다
+- **결과는 등록한 사람만** — 등록할 때 받은 소유자 토큰이 있어야 인증 · 점검 · 결과 조회를 할 수 있습니다
 - **공격하지 않고 확인만** — 일반 GET · TLS 연결 · DNS 조회만 합니다
-- **내부망 차단** — 사설 · 루프백 · 링크 로컬 주소로 풀리는 호스트는 요청하지 않습니다
+- **내부망 차단** — 사설 · 루프백 · 링크 로컬 · NAT64 · 6to4 등 내부로 이어질 수 있는 주소로 풀리는 호스트는 요청하지 않고,
+  검사한 IP로만 연결합니다(DNS 리바인딩 차단). 자세한 내용: [docs/threat-model.md](docs/threat-model.md)
 - **비밀은 저장하지 않음** — 노출 여부와 근거 요약만 남깁니다
 
 ## 점검 항목
@@ -29,12 +31,28 @@ AI 도구로 공격 정찰이 자동화되면서, 노출된 설정 파일 · 만
 PostgreSQL: `DATABASE_URL=jdbc:postgresql://... DATABASE_USERNAME=... DATABASE_PASSWORD=... ./gradlew bootRun`
 
 ## API
-| 메서드 | 경로 | 설명 |
-|---|---|---|
-| POST | `/api/domains` | 도메인 등록, 인증용 TXT 레코드 안내 |
-| POST | `/api/domains/{id}/verify` | 소유 인증 |
-| POST | `/api/domains/{id}/scans` | 점검 요청 (인증된 도메인, 10분에 한 번) |
-| GET | `/api/scans/{id}` | 점수 · 위험도순 결과 |
+등록 응답의 `ownerToken`을 이후 모든 요청에 `Authorization: Bearer <ownerToken>`으로 보냅니다. 토큰은 등록 응답에서 **한 번만** 받을 수 있습니다.
+`{id}`는 모두 UUID입니다.
+
+| 메서드 | 경로 | 토큰 | 설명 |
+|---|---|---|---|
+| POST | `/api/domains` | | 도메인 등록 → 등록 id · 소유자 토큰 · 인증용 TXT 레코드 안내 (등록마다 새로 발급) |
+| GET | `/api/domains/{id}` | 필요 | 등록 상태 · TXT 레코드 안내 |
+| POST | `/api/domains/{id}/verify` | 필요 | 소유 인증 |
+| POST | `/api/domains/{id}/scans` | 필요 | 점검 요청 (TXT 레코드 재확인, 같은 도메인 10분에 한 번) |
+| GET | `/api/scans/{id}` | 필요 | 점수 · 위험도순 결과 (점검을 요청한 등록의 토큰으로만) |
+
+```bash
+# 1) 등록 — ownerToken은 다시 받을 수 없으니 보관한다
+curl -s -X POST localhost:8080/api/domains -H 'Content-Type: application/json' -d '{"name":"example.com"}'
+# 2) 안내받은 TXT 레코드를 DNS에 넣은 뒤 인증
+curl -s -X POST localhost:8080/api/domains/$ID/verify -H "Authorization: Bearer $TOKEN"
+# 3) 점검 요청 → 4) 결과
+curl -s -X POST localhost:8080/api/domains/$ID/scans -H "Authorization: Bearer $TOKEN"
+curl -s localhost:8080/api/scans/$SCAN_ID -H "Authorization: Bearer $TOKEN"
+```
+
+등록 · 인증 · 점검 요청은 IP별로 횟수를 제한합니다(`mundansok.rate-limit`, 넘치면 `429 RATE_LIMITED`). 메모리 기반이라 **서버 한 대 기준**입니다.
 
 자세한 명세: [docs/planning/07-api-spec.md](docs/planning/07-api-spec.md)
 

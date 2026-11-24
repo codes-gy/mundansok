@@ -34,7 +34,7 @@ class ScanRecoveryTest {
     @Test
     void 오래된_QUEUED_RUNNING만_FAILED로_바꾼다() {
         Instant now = Instant.now();
-        Long domainId = TestRows.verifiedDomain(jdbc, "restart.example.com");
+        Long domainId = TestRows.verifiedClaim(jdbc, "restart.example.com").domainId();
         Long oldRunning = TestRows.scan(jdbc, domainId, "RUNNING", now.minus(Duration.ofHours(2)));
         Long oldQueued = TestRows.scan(jdbc, domainId, "QUEUED", now.minus(Duration.ofMinutes(16)));
         Long recentRunning = TestRows.scan(jdbc, domainId, "RUNNING", now.minus(Duration.ofMinutes(1)));
