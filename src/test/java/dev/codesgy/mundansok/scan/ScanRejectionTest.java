@@ -5,8 +5,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import dev.codesgy.mundansok.support.FakeDnsResolver;
 import dev.codesgy.mundansok.support.FakeNetwork;
 import dev.codesgy.mundansok.support.TestRows;
+import dev.codesgy.mundansok.support.TestRows.TestClaim;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -40,6 +42,9 @@ class ScanRejectionTest {
     @Autowired
     MeterRegistry registry;
 
+    @Autowired
+    FakeDnsResolver dns;
+
     MockMvc mvc;
 
     @BeforeEach
@@ -49,7 +54,9 @@ class ScanRejectionTest {
 
     @Test
     void 대기열이_가득_차면_503을_주고_점검을_남기지_않는다() throws Exception {
-        Long domainId = TestRows.verifiedDomain(jdbc, "busy.example.com");
+        TestClaim claim = TestRows.verifiedClaim(jdbc, "busy.example.com");
+        Long domainId = claim.domainId();
+        dns.txt(claim.txtName(), claim.txtValue());
         double rejectedBefore = rejectedCount();
 
         CountDownLatch release = new CountDownLatch(1);
@@ -65,7 +72,7 @@ class ScanRejectionTest {
                 });
             }
 
-            mvc.perform(post("/api/domains/{id}/scans", domainId))
+            mvc.perform(post("/api/domains/{id}/scans", claim.publicId()).header("Authorization", "Bearer " + claim.ownerToken()))
                     .andExpect(status().isServiceUnavailable())
                     .andExpect(jsonPath("$.code").value("SCAN_QUEUE_FULL"));
 
@@ -79,7 +86,7 @@ class ScanRejectionTest {
 
         // 풀이 비면 쿨다운에 걸리지 않고 바로 다시 요청할 수 있다
         waitUntilIdle();
-        mvc.perform(post("/api/domains/{id}/scans", domainId))
+        mvc.perform(post("/api/domains/{id}/scans", claim.publicId()).header("Authorization", "Bearer " + claim.ownerToken()))
                 .andExpect(status().isAccepted());
     }
 
